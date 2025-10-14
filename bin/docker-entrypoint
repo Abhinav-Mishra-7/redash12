@@ -3,30 +3,26 @@ set -e
 
 scheduler() {
   echo "Starting RQ scheduler..."
-
   exec /app/manage.py rq scheduler
 }
 
 dev_scheduler() {
   echo "Starting dev RQ scheduler..."
-
   exec watchmedo auto-restart --directory=./redash/ --pattern=*.py --recursive -- ./manage.py rq scheduler
 }
 
 worker() {
   echo "Starting RQ worker..."
-
   export WORKERS_COUNT=${WORKERS_COUNT:-2}
   export QUEUES=${QUEUES:-}
-
   exec supervisord -c worker.conf
 }
 
 workers_healthcheck() {
   WORKERS_COUNT=${WORKERS_COUNT}
   echo "Checking active workers count against $WORKERS_COUNT..."
-  ACTIVE_WORKERS_COUNT=`echo $(rq info --url $REDASH_REDIS_URL -R | grep workers | grep -oP ^[0-9]+)`
-  if [ "$ACTIVE_WORKERS_COUNT" -lt "$WORKERS_COUNT"  ]; then
+  ACTIVE_WORKERS_COUNT=$(rq info --url "$REDASH_REDIS_URL" -R | grep workers | grep -oP '^[0-9]+')
+  if [ "$ACTIVE_WORKERS_COUNT" -lt "$WORKERS_COUNT" ]; then
     echo "$ACTIVE_WORKERS_COUNT workers are active, Exiting"
     exit 1
   else
@@ -37,12 +33,10 @@ workers_healthcheck() {
 
 dev_worker() {
   echo "Starting dev RQ worker..."
-
   exec watchmedo auto-restart --directory=./redash/ --pattern=*.py --recursive -- ./manage.py rq worker $QUEUES
 }
 
 server() {
-  # Recycle gunicorn workers every n-th request. See http://docs.gunicorn.org/en/stable/settings.html#max-requests for more details.
   MAX_REQUESTS=${MAX_REQUESTS:-1000}
   MAX_REQUESTS_JITTER=${MAX_REQUESTS_JITTER:-100}
   TIMEOUT=${REDASH_GUNICORN_TIMEOUT:-60}
@@ -58,7 +52,6 @@ help() {
   echo ""
   echo "Usage:"
   echo ""
-
   echo "server -- start Redash server (with gunicorn)"
   echo "worker -- start a single RQ worker"
   echo "dev_worker -- start a single RQ worker with code reloading"
@@ -75,7 +68,6 @@ help() {
 
 tests() {
   export REDASH_DATABASE_URL="postgresql://postgres@postgres/tests"
-
   if [ $# -eq 0 ]; then
     TEST_ARGS=tests/
   else
